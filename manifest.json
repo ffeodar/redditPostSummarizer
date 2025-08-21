@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Reddit post summarizer",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "description": "Summarizes long Reddit posts using a local Ollama server",
   "content_scripts": [
     {
@@ -25,4 +25,5 @@
   "permissions": [
     "activeTab"
   ]
+
 }
