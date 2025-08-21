@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Reddit post summarizer",
+  "version": "1.1.0",
+  "description": "Summarizes long Reddit posts using a local Ollama server",
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.reddit.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "host_permissions": [
+    "http://localhost/*",
+    "*://*.reddit.com/*"
+  ],
+  "permissions": [
+    "activeTab"
+  ]
+}
