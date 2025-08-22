@@ -1,3 +1,24 @@
+async function getModelName() {
+    try {
+        const result = await chrome.storage.local.get(['modelName']);
+        return result.modelName || 'gemma3:1b';
+    } catch (error) {
+        console.error('Error getting model from storage:', error);
+        return 'gemma3:1b';
+    }
+}
+
+async function setModelName(modelName) {
+    try {
+        await chrome.storage.local.set({ modelName: modelName });
+        console.log('Model saved to storage:', modelName);
+        return true;
+    } catch (error) {
+        console.error('Error saving model to storage:', error);
+        return false;
+    }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message && message.type === "PROCESS_POST_TEXT") {
         const postText = message.postText || "";
@@ -5,18 +26,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         const prompt = `Provide a brief summary of this text in 1-2 sentences (your response must contain only the summary and nothing else):\n\n${postText}`;
 
-        fetch("http://localhost:11434/v1/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                model: "gemma3:1b",
-                prompt: prompt,
-                max_tokens: 100,
-                temperature: 0.7
+        getModelName().then(modelName => {
+            console.log("Using model:", modelName);
+            
+            fetch("http://localhost:11434/v1/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: modelName,
+                    prompt: prompt,
+                    max_tokens: 100,
+                    temperature: 0.7
+                })
             })
-        })
             .then(async (res) => {
                 console.log("Ollama API response status:", res.status);
                 let text = "";
@@ -36,6 +60,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 console.error("Ollama API request error:", err);
                 sendResponse({ text: "(request error: " + err.message + ")" });
             });
+        }).catch((err) => {
+            console.error("Error getting model:", err);
+            sendResponse({ text: "(error getting model)" });
+        });
 
         return true;
     } else if (message && message.type === "GET_POST_TEXT") {
@@ -63,6 +91,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 console.error("Reddit API request error:", err);
                 sendResponse({ text: "(request error: " + err.message + ")" });
             });
+
+        return true;
+    } else if (message && message.type === "GET_MODEL_NAME") {
+        getModelName().then(modelName => {
+            sendResponse({ modelName: modelName });
+        }).catch((err) => {
+            console.error("Error getting model:", err);
+            sendResponse({ modelName: "gemma3:1b" });
+        });
+
+        return true;
+    } else if (message && message.type === "SET_MODEL_NAME") {
+        const newModelName = message.modelName;
+        if (!newModelName) {
+            sendResponse({ success: false, error: "No model provided" });
+            return true;
+        }
+
+        setModelName(newModelName).then(success => {
+            sendResponse({ success: success });
+        }).catch((err) => {
+            console.error("Error setting model:", err);
+            sendResponse({ success: false, error: err.message });
+        });
 
         return true;
     }
