@@ -22,8 +22,6 @@ async function setModelName(modelName) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message && message.type === "PROCESS_POST_TEXT") {
         const postText = message.postText || "";
-        console.log("Processing post text:", postText);
-
         const prompt = `Provide a brief summary of this text in 1-2 sentences (your response must contain only the summary and nothing else):\n\n${postText}`;
 
         getModelName().then(modelName => {
